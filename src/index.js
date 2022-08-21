@@ -1,6 +1,5 @@
 const express = require('express');
 const cors = require('cors');
-
 const { v4: uuidv4, validate } = require('uuid');
 
 const app = express();
@@ -10,19 +9,58 @@ app.use(cors());
 const users = [];
 
 function checksExistsUserAccount(request, response, next) {
-  // Complete aqui
+  const { username } = request.headers;
+
+  const user = users.find((user) => user.username === username);
+  if(!user){
+    return response.status(404).json({error: "Username not found"});
+  }
+  request.user = user;
+  return next();
 }
 
 function checksCreateTodosUserAvailability(request, response, next) {
-  // Complete aqui
+  const user = request.user;
+if(user.pro === true){
+  console.log("PRO ACTIVE MODE");
+  return next();
+}
+  if(user.pro === false){
+    if(user.todos.length < 10){
+      console.log("NO PRO TODOS LIMITS 10");
+      request.user = user;
+    return next();
+    }
+    console.log("PROCEEDING IS NOT ALLOWED");
+    return response.status(401).json({error: "PROCEEDING IS NOT ALLOWED"});
+  }
 }
 
 function checksTodoExists(request, response, next) {
-  // Complete aqui
+  const { user} = request;
+  const { id } = request.params;
+  if(checkIfValidUUID(id)){
+    console.log("UUID4 IS VALID VALUE: ",id);
+    const todoIndex =  user.todos.findIndex(todo => todo.id === id);
+
+    if(todoIndex == -1){
+      return response.status(404).json({error: 'NOT FOUND TODO'}); 
+    }
+    request.user = user;
+    return next();
+  }
+  console.log("UUID4 IS NOT VALID VALUE: ", id);
+  return response.status(401).json({error: "UUID4 IS NOT VALID"});
+
 }
 
 function findUserById(request, response, next) {
   // Complete aqui
+}
+
+function checkIfValidUUID(str) {
+  const regexExp = /[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89aAbB][a-f0-9]{3}-[a-f0-9]{12}/;
+  return regexExp.test(str);
 }
 
 app.post('/users', (request, response) => {
@@ -70,6 +108,8 @@ app.get('/todos', checksExistsUserAccount, (request, response) => {
 
   return response.json(user.todos);
 });
+
+
 
 app.post('/todos', checksExistsUserAccount, checksCreateTodosUserAvailability, (request, response) => {
   const { title, deadline } = request.body;
@@ -119,6 +159,20 @@ app.delete('/todos/:id', checksExistsUserAccount, checksTodoExists, (request, re
 
   return response.status(204).send();
 });
+
+
+
+app.get('/todos/:id',checksTodoExists, (request, response) => {
+  const { user } = request;
+  const { id } = request.params;
+
+
+return response.json(id);
+
+
+});
+
+
 
 module.exports = {
   app,
