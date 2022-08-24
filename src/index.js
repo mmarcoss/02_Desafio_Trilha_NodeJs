@@ -8,6 +8,7 @@ app.use(cors());
 
 const users = [];
 
+
 function checksExistsUserAccount(request, response, next) {
   const { username } = request.headers;
 
@@ -23,6 +24,7 @@ function checksCreateTodosUserAvailability(request, response, next) {
   const user = request.user;
 if(user.pro === true){
   console.log("PRO ACTIVE MODE");
+  request.user = user;
   return next();
 }
   if(user.pro === false){
@@ -32,30 +34,41 @@ if(user.pro === true){
     return next();
     }
     console.log("PROCEEDING IS NOT ALLOWED");
-    return response.status(401).json({error: "PROCEEDING IS NOT ALLOWED"});
+    return response.status(403).json({error: "PROCEEDING IS NOT ALLOWED"});
   }
 }
 
 function checksTodoExists(request, response, next) {
-  const { user} = request;
-  const { id } = request.params;
-  if(checkIfValidUUID(id)){
-    console.log("UUID4 IS VALID VALUE: ",id);
-    const todoIndex =  user.todos.findIndex(todo => todo.id === id);
+ const { user } = request;
+ const  { id } = request.params;
+ const { username } = request.headers;
 
-    if(todoIndex == -1){
-      return response.status(404).json({error: 'NOT FOUND TODO'}); 
+  if(checkIfValidUUID(id)){
+    const userExists = users.find((user) => user.username === username);
+
+    if(!userExists){
+      return response.status(404).json({error: 'NOT FOUND REGISTERED USER NAME', userExists});
     }
-    request.user = user;
+    const todoExists = userExists.todos.find((todo) => todo.id === id);
+    
+    if(!todoExists){
+      return response.status(404).json({error: 'ID TODO NOT REGISTRED',id});
+    }
+    request.user = userExists;
     return next();
   }
-  console.log("UUID4 IS NOT VALID VALUE: ", id);
-  return response.status(401).json({error: "UUID4 IS NOT VALID"});
-
+  return response.status(400).json({error: 'UUID4 IS NOT VALID', id});
 }
 
 function findUserById(request, response, next) {
-  // Complete aqui
+  const { id } = request.params;
+  const user = users.find((user) => user.id === id);
+
+  if(!user){
+    return response.status(404).json({error: 'USERID NOT FOUND', id});
+  }
+  request.user = user;
+  return next();
 }
 
 function checkIfValidUUID(str) {
@@ -159,20 +172,6 @@ app.delete('/todos/:id', checksExistsUserAccount, checksTodoExists, (request, re
 
   return response.status(204).send();
 });
-
-
-
-app.get('/todos/:id',checksTodoExists, (request, response) => {
-  const { user } = request;
-  const { id } = request.params;
-
-
-return response.json(id);
-
-
-});
-
-
 
 module.exports = {
   app,
