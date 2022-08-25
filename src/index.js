@@ -56,6 +56,7 @@ function checksTodoExists(request, response, next) {
     }
     console.log("valor:",todoExists);
     request.todo = todoExists;
+    request.user = userExists;
     return next();
   }
   return response.status(400).json({error: 'UUID4 IS NOT VALID', id});
