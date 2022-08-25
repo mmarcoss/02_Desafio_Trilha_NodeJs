@@ -43,18 +43,19 @@ function checksTodoExists(request, response, next) {
  const  { id } = request.params;
  const { username } = request.headers;
 
+
+
   if(checkIfValidUUID(id)){
     const userExists = users.find((user) => user.username === username);
-
     if(!userExists){
       return response.status(404).json({error: 'NOT FOUND REGISTERED USER NAME', userExists});
     }
-    const todoExists = userExists.todos.find((todo) => todo.id === id);
-    
+    const todoExists = userExists.todos.find((todo) => todo.id === id);  
     if(!todoExists){
       return response.status(404).json({error: 'ID TODO NOT REGISTRED',id});
     }
-    request.user = userExists;
+    console.log("valor:",todoExists);
+    request.todo = todoExists;
     return next();
   }
   return response.status(400).json({error: 'UUID4 IS NOT VALID', id});
